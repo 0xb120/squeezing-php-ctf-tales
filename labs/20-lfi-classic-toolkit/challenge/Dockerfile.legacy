@@ -1,0 +1,99 @@
+# ---------------------------------------------------------------------------
+# The "museum wing": the same application source, served by the interpreters
+# that were current when Exhibit 1 still worked.
+#
+#   PHP 5.3.3  - last release before the NUL-byte path guard.
+#   PHP 5.3.4  - the release that killed it. NEWS, 5.3.4, 2010-12-09:
+#                  "Paths with NULL in them (foo\0bar.txt) are now considered
+#                   as invalid. (Rasmus)"
+#                Implementation: `if (strlen(filename) != filename_length)`
+#                in main/fopen_wrappers.c:php_resolve_path() (the resolver
+#                `include`/`require` go through) plus ~30 copies of the same
+#                guard in ext/standard/file.c.
+#
+# No official php:* image is older than 5.3.29, so both interpreters are
+# compiled from the museum.php.net tarballs, pinned by version and SHA-256.
+# ---------------------------------------------------------------------------
+
+FROM debian:bookworm-20250929-slim AS toolchain
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends build-essential curl ca-certificates; \
+    rm -rf /var/lib/apt/lists/*
+
+# --- PHP 5.3.3 -------------------------------------------------------------
+FROM toolchain AS php533
+ARG V=5.3.3
+ARG SHA=a8bf9ce535fa4c3f7acd00ed92ca50be49e9710876649ef26369b0326985833c
+WORKDIR /usr/src
+RUN set -eux; \
+    curl -fsSL -o php.tar.gz "https://museum.php.net/php5/php-${V}.tar.gz"; \
+    echo "${SHA}  php.tar.gz" | sha256sum -c -; \
+    tar -xzf php.tar.gz; rm php.tar.gz
+WORKDIR /usr/src/php-5.3.3
+# -fcommon / -std=gnu89 keep a 2010 codebase compiling on GCC 12.
+RUN CFLAGS="-fcommon -O1 -w -std=gnu89" ./configure \
+        --prefix=/opt/php533 \
+        --disable-all --disable-cli --enable-cgi \
+        --without-pear --without-iconv \
+        --disable-libxml --disable-dom --disable-simplexml \
+        --disable-xml --disable-xmlreader --disable-xmlwriter \
+        --disable-phar --disable-json --disable-pdo --without-sqlite3 \
+ && make -j"$(nproc)" && make install
+
+# --- PHP 5.3.4 -------------------------------------------------------------
+FROM toolchain AS php534
+ARG V=5.3.4
+ARG SHA=9ff3684ea5273e54b8e6d2324c8e402feaa6958fe05885d00e0a18dec3098d64
+WORKDIR /usr/src
+RUN set -eux; \
+    curl -fsSL -o php.tar.gz "https://museum.php.net/php5/php-${V}.tar.gz"; \
+    echo "${SHA}  php.tar.gz" | sha256sum -c -; \
+    tar -xzf php.tar.gz; rm php.tar.gz
+WORKDIR /usr/src/php-5.3.4
+RUN CFLAGS="-fcommon -O1 -w -std=gnu89" ./configure \
+        --prefix=/opt/php534 \
+        --disable-all --disable-cli --enable-cgi \
+        --without-pear --without-iconv \
+        --disable-libxml --disable-dom --disable-simplexml \
+        --disable-xml --disable-xmlreader --disable-xmlwriter \
+        --disable-phar --disable-json --disable-pdo --without-sqlite3 \
+ && make -j"$(nproc)" && make install
+
+# --- runtime ---------------------------------------------------------------
+FROM debian:bookworm-20250929-slim
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends apache2 ca-certificates; \
+    rm -rf /var/lib/apt/lists/*
+
+COPY --from=php533 /opt/php533/bin/php-cgi /usr/lib/php-cgi533/php-cgi
+COPY --from=php534 /opt/php534/bin/php-cgi /usr/lib/php-cgi534/php-cgi
+COPY php-legacy.ini /opt/php533/lib/php.ini
+COPY php-legacy.ini /opt/php534/lib/php.ini
+COPY apache-legacy.conf /etc/apache2/conf-available/museum.conf
+
+RUN set -eux; \
+    a2enmod actions cgid alias mime; \
+    a2enconf museum; \
+    printf 'ServerName museum.local\n' > /etc/apache2/conf-available/servername.conf; \
+    a2enconf servername; \
+    rm -f /var/www/html/index.html
+
+# Exhibit 1 and the pages it renders. The other three exhibits need PHP
+# features this 2010 build was not compiled with, so they are not deployed
+# here - see README.md.
+COPY src/index.php src/stage1.php src/_style.php /var/www/html/
+COPY src/exhibits/ /var/www/html/exhibits/
+
+# The curator key fragment that Exhibit 1 protects. It lives ONLY in this
+# container, so it cannot be reached by code execution on the modern wing.
+RUN set -eux; \
+    mkdir -p /opt/museum/keys; \
+    printf 'k1-nulbyte-8f2a41d0\n' > /opt/museum/keys/stage1.key; \
+    chmod 0444 /opt/museum/keys/stage1.key; \
+    chmod 0555 /var/www/html; \
+    printf 'MUSEUM_WING=legacy\n' > /opt/museum/wing
+
+EXPOSE 80
+CMD ["apache2ctl", "-D", "FOREGROUND"]

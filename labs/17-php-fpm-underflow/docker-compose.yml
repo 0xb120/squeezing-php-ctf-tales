@@ -1,0 +1,24 @@
+name: phpctf-17-php-fpm-underflow
+
+services:
+  challenge:
+    build:
+      context: ./challenge
+      dockerfile: Dockerfile.nginx
+    image: phpctf-17-nginx
+    ports: ["127.0.0.1:8017:80"]
+    depends_on: [php]
+
+  php:
+    build:
+      context: ./challenge
+      dockerfile: Dockerfile.fpm
+    image: phpctf-17-fpm
+
+  solver:
+    image: python:3.12-alpine
+    profiles: ["solve"]
+    volumes: ["./solve:/solve:ro"]
+    working_dir: /solve
+    command: ["python", "solve.py", "http://challenge/index.php"]
+    depends_on: [challenge]

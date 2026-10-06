@@ -1,0 +1,19 @@
+{
+    "name": "phpctf/quotebuilder",
+    "description": "HTML to PDF quote renderer (deliberately vulnerable lab target)",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "mpdf/mpdf": "8.0.10",
+        "illuminate/broadcasting": "8.83.27",
+        "illuminate/bus": "8.83.27"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "platform": {
+            "php": "7.4.33",
+            "ext-gd": "7.4.33",
+            "ext-mbstring": "7.4.33"
+        }
+    }
+}

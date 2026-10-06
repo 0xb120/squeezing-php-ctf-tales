@@ -1,0 +1,25 @@
+name: phpctf-22-hashdos-fix-rce
+
+services:
+  challenge:
+    build: ./challenge
+    image: phpctf/22-hashdos-fix-rce:php5.3.9
+    ports:
+      - "127.0.0.1:8022:80"
+    restart: unless-stopped
+    # The lab corrupts php-cgi's heap on purpose. `setarch -R` in the
+    # entrypoint needs personality(ADDR_NO_RANDOMIZE), which Docker's default
+    # seccomp profile blocks, so ASLR would otherwise stay on and the exercise
+    # would turn into an address-brute-force research project. See README.md.
+    security_opt:
+      - seccomp:unconfined
+
+  solver:
+    image: python:3.12-alpine
+    profiles: ["solve"]
+    volumes:
+      - ./solve:/solve:ro
+    working_dir: /solve
+    command: ["python", "solve.py", "http://challenge"]
+    depends_on:
+      - challenge

@@ -1,0 +1,6 @@
+.work/
+.verify-logs/
+.cold-logs/
+.remember/
+**/solve/__pycache__/
+*.pyc

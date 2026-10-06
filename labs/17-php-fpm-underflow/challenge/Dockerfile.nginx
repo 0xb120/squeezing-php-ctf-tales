@@ -1,0 +1,7 @@
+FROM nginx:1.31.5-alpine
+
+# the vulnerable server block (see WRITEUP.md, "The bug")
+COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+# kept next to it so you can diff the two
+COPY nginx/default.fixed.conf /etc/nginx/default.fixed.conf.example
+COPY src/ /var/www/html/

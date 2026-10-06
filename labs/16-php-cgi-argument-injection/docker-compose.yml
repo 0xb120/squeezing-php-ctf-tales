@@ -1,0 +1,38 @@
+name: phpctf-16-php-cgi-argument-injection
+
+services:
+  # 2012 scenario: a legacy CGI gateway that builds argv out of any query
+  # string, in front of a current, fully patched php-cgi.
+  challenge:
+    build: ./challenge
+    image: phpctf-16-php-cgi
+    environment:
+      MODE: classic
+    ports: ["127.0.0.1:8016:80"]
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1/') ? 0 : 1);"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  # CVE-2024-4577: an RFC-3875-correct gateway, plus a model of the Windows
+  # UTF-16 -> ANSI "Best Fit" conversion applied to argv only.
+  worstfit:
+    build: ./challenge
+    image: phpctf-16-php-cgi
+    environment:
+      MODE: worstfit
+    ports: ["127.0.0.1:9016:80"]
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1/') ? 0 : 1);"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  solver:
+    image: python:3.12-alpine
+    profiles: ["solve"]
+    volumes: ["./solve:/solve:ro"]
+    working_dir: /solve
+    command: ["python", "solve.py", "http://challenge", "http://worstfit"]
+    depends_on: [challenge, worstfit]

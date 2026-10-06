@@ -1,0 +1,53 @@
+name: phpctf-02-arbitrary-object-instantiation
+
+services:
+  challenge:
+    build: ./challenge
+    image: phpctf/02-arbitrary-object-instantiation:php7.4.33
+    ports:
+      - "127.0.0.1:8002:80"
+    volumes:
+      - pkgcache:/var/www/pkgcache
+    networks:
+      # the front-end straddles both: players reach it, and it is the only
+      # thing that can reach the registry.
+      - edge
+      - appnet
+    depends_on:
+      - registry
+    restart: unless-stopped
+
+  # Internal only: no host port, and only on `appnet`, which no attacker-side
+  # container joins. Reachable from `challenge` as registry:8080 and from
+  # nowhere else -- the SSRF is the only route to it.
+  registry:
+    build: ./registry
+    image: phpctf/02-arbitrary-object-instantiation-registry:1.4
+    expose:
+      - "8080"
+    volumes:
+      - pkgcache:/pkgcache
+    networks:
+      - appnet
+    restart: unless-stopped
+
+  solver:
+    image: python:3.12-alpine
+    profiles: ["solve"]
+    volumes:
+      - ./solve:/solve:ro
+    working_dir: /solve
+    command: ["python", "solve.py", "http://challenge"]
+    networks:
+      # deliberately NOT on appnet: the exploit has to go through PluginHub.
+      - edge
+    depends_on:
+      - challenge
+
+networks:
+  edge:
+  appnet:
+    internal: true
+
+volumes:
+  pkgcache:

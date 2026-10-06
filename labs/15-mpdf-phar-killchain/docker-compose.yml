@@ -1,0 +1,19 @@
+name: phpctf-15-mpdf-phar-killchain
+
+services:
+  challenge:
+    build: ./challenge
+    image: phpctf-15-mpdf-phar-killchain:latest
+    ports:
+      - "127.0.0.1:8015:80"
+    restart: unless-stopped
+
+  solver:
+    image: python:3.12-alpine
+    profiles: ["solve"]
+    volumes:
+      - "./solve:/solve:ro"
+    working_dir: /solve
+    command: ["python", "solve.py", "http://challenge"]
+    depends_on:
+      - challenge

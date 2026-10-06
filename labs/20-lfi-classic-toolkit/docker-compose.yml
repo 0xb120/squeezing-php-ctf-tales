@@ -1,0 +1,32 @@
+name: phpctf-20-lfi-classic-toolkit
+
+services:
+  # The modern wing: exhibits 2, 3 and 4, plus the vault.
+  challenge:
+    build:
+      context: ./challenge
+      dockerfile: Dockerfile
+    image: phpctf/20-lfi-classic-toolkit:php8.2.33
+    ports:
+      - "127.0.0.1:8020:80"
+    restart: unless-stopped
+
+  # The legacy wing: the same application source served by PHP 5.3.3 (where
+  # NUL-byte truncation still works) and, under /v534/, by PHP 5.3.4 (where it
+  # does not).  Exhibit 1 only has teeth here, which is the whole point.
+  legacy:
+    build:
+      context: ./challenge
+      dockerfile: Dockerfile.legacy
+    image: phpctf/20-lfi-classic-toolkit:php5.3.3
+    ports:
+      - "127.0.0.1:9020:80"
+    restart: unless-stopped
+
+  solver:
+    image: python:3.12-alpine
+    profiles: ["solve"]
+    volumes: ["./solve:/solve:ro"]
+    working_dir: /solve
+    command: ["python", "solve.py", "http://challenge", "http://legacy"]
+    depends_on: [challenge, legacy]

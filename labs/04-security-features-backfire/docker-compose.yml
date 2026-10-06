@@ -1,0 +1,62 @@
+name: phpctf-04-security-features-backfire
+
+services:
+  challenge:
+    build: ./challenge
+    image: phpctf-04-challenge:latest
+    container_name: phpctf04-challenge
+    hostname: challenge
+    ports:
+      - "127.0.0.1:8004:80"
+    networks:
+      lab:
+        aliases: [challenge]
+    healthcheck:
+      test: ["CMD", "php", "-r", "exit(@file_get_contents('http://127.0.0.1/')?0:1);"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  bot:
+    build: ./bot
+    image: phpctf-04-bot:latest
+    container_name: phpctf04-bot
+    hostname: bot
+    environment:
+      CHALLENGE_ORIGIN: "http://challenge"
+      COOKIE_NAME: "flag"
+      VISIT_SECONDS: "6"
+      LISTEN_PORT: "8080"
+    ports:
+      - "127.0.0.1:9004:8080"
+    networks:
+      lab:
+        aliases: [bot]
+    depends_on:
+      challenge:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8080/health',timeout=3)"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+
+  # run with: docker compose --profile solve run --rm --use-aliases --quiet-pull solver
+  solver:
+    image: python:3.12-alpine
+    profiles: ["solve"]
+    hostname: solver
+    volumes:
+      - "./solve:/solve:ro"
+    working_dir: /solve
+    command: ["python", "solve.py", "http://challenge", "http://bot:8080"]
+    networks:
+      lab:
+        aliases: [solver]
+    depends_on:
+      - challenge
+      - bot
+
+networks:
+  lab:
+    driver: bridge

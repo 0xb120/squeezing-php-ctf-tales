@@ -1,0 +1,9 @@
+# 7.2.23 is the last 7.2 release before the CVE-2019-11043 fix (7.2.24).
+FROM php:7.2.23-fpm
+
+COPY src/ /var/www/html/
+COPY flag.txt /flag.txt
+COPY fpm/zzz-lab.conf /usr/local/etc/php-fpm.d/zzz-lab.conf
+
+# the flag is readable by the pool user, and by nothing else
+RUN chown root:www-data /flag.txt && chmod 0440 /flag.txt

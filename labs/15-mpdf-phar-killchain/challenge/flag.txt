@@ -1,0 +1,1 @@
+PHRACK{a_data_uri_smuggled_my_phar_into_the_mpdf_cache}

@@ -1,0 +1,27 @@
+name: phpctf-10-avoracle
+
+services:
+  challenge:
+    build: ./challenge
+    ports: ["127.0.0.1:8010:80"]
+    volumes: ["sessions:/sessions"]
+    depends_on: [scanner]
+    restart: unless-stopped
+
+  # Models Windows Defender's real-time protection over the session directory.
+  scanner:
+    build: ./scanner
+    ports: ["127.0.0.1:9010:8080"]
+    volumes: ["sessions:/sessions"]
+    restart: unless-stopped
+
+  solver:
+    image: python:3.12-alpine
+    profiles: ["solve"]
+    volumes: ["./solve:/solve:ro"]
+    working_dir: /solve
+    command: ["python", "solve.py", "http://challenge", "http://scanner:8080"]
+    depends_on: [challenge, scanner]
+
+volumes:
+  sessions:

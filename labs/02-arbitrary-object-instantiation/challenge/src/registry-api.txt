@@ -1,0 +1,35 @@
+PluginHub internal registry API  (v1.4)
+=======================================
+
+Base URL, private application network only:
+
+    http://registry:8080/
+
+Public endpoints
+----------------
+
+    GET  /                      service banner
+    GET  /packages              list published packages
+    GET  /packages/<name>       fetch a published package
+
+
+Administrative endpoints
+------------------------
+
+Reserved for the application server. The registry accepts them only as a
+POST request that carries the internal role header:
+
+    POST /admin/export HTTP/1.1
+    Host: registry:8080
+    X-Registry-Role: admin
+    Content-Type: application/x-www-form-urlencoded
+    Content-Length: <n>
+
+    dest=<filename>
+
+Writes the registry's sealed vault bundle into the shared package cache
+(mounted as /var/www/pkgcache on this front-end, browsable from the home
+page) under <filename>. The nightly backup job uses this.
+
+Because nothing outside the application network can reach the registry,
+no further authentication is configured on these endpoints.

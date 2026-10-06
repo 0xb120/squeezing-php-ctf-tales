@@ -1,0 +1,1 @@
+PHRACK{ini_set_walked_right_out_of_the_open_basedir}

@@ -1,0 +1,19 @@
+name: phpctf-13-filter-chain-oracle
+
+services:
+  challenge:
+    build: ./challenge
+    ports: ["127.0.0.1:8013:80"]
+    restart: unless-stopped
+    # 8 concurrent oracle requests x 128M memory_limit + apache overhead.
+    # Must stay well above that: a cgroup OOM kill would also look like a 500
+    # and poison the oracle.
+    mem_limit: 2g
+
+  solver:
+    image: python:3.12-alpine
+    profiles: ["solve"]
+    volumes: ["./solve:/solve:ro"]
+    working_dir: /solve
+    command: ["python", "solve.py", "http://challenge", "/flag.txt", "8"]
+    depends_on: [challenge]

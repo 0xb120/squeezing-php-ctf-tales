@@ -1,0 +1,1 @@
+PHRACK{bug_71105_taught_the_new_operator_to_speak_printf}

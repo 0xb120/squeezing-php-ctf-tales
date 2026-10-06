@@ -1,0 +1,27 @@
+name: phpctf-19-mysql-client-file-read
+
+services:
+  challenge:
+    build: ./challenge
+    ports:
+      - "127.0.0.1:8019:80"
+
+  # The rogue MySQL server, kept running so a human player can point the panel
+  # at rogue:3306 from the web UI, or poke it from the host on port 9019.
+  rogue:
+    image: python:3.12-alpine
+    volumes:
+      - "./solve:/solve:ro"
+    working_dir: /solve
+    command: ["python", "rogue.py", "--bind", "0.0.0.0:3306", "--file", "/flag.txt"]
+    ports:
+      - "127.0.0.1:9019:3306"
+
+  solver:
+    image: python:3.12-alpine
+    profiles: ["solve"]
+    volumes:
+      - "./solve:/solve:ro"
+    working_dir: /solve
+    command: ["python", "solve.py", "http://challenge"]
+    depends_on: [challenge]

@@ -1,0 +1,15 @@
+name: phpctf-09-windows-path-wildcards
+
+services:
+  challenge:
+    build: ./challenge
+    ports: ["127.0.0.1:8009:80"]
+    restart: unless-stopped
+
+  solver:
+    image: python:3.12-alpine
+    profiles: ["solve"]
+    volumes: ["./solve:/solve:ro"]
+    working_dir: /solve
+    command: ["python", "solve.py", "http://challenge"]
+    depends_on: [challenge]

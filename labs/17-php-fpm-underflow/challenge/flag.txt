@@ -1,0 +1,1 @@
+PHRACK{one_null_byte_walked_backwards_into_php_fpm}

@@ -1,0 +1,19 @@
+name: phpctf-01-upload-index-corruption
+
+services:
+  challenge:
+    build: ./challenge
+    image: phpctf/01-upload-index-corruption:php5.3.10
+    ports:
+      - "127.0.0.1:8001:80"
+    restart: unless-stopped
+
+  solver:
+    image: python:3.12-alpine
+    profiles: ["solve"]
+    volumes:
+      - ./solve:/solve:ro
+    working_dir: /solve
+    command: ["python", "solve.py", "http://challenge"]
+    depends_on:
+      - challenge

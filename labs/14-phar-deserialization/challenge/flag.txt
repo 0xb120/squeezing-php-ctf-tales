@@ -1,0 +1,1 @@
+PHRACK{phar_metadata_turns_file_exists_into_unserialize}

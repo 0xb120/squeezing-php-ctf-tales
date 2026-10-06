@@ -1,0 +1,15 @@
+# The "level 0" build: the LAST PHP release before the fix for bug #72663
+# (CVE-2016-7124) landed in 7.0.10 / 5.6.25. Byte-for-byte the same application.
+FROM php:7.0.9-apache
+
+RUN printf 'display_errors=Off\nlog_errors=On\nerror_log=/dev/stderr\n' \
+      > /usr/local/etc/php/conf.d/zz-lab.ini
+
+COPY src/             /var/www/html/
+COPY flag-legacy.txt  /flag.txt
+
+RUN chmod 0444 /flag.txt \
+ && mkdir -p /var/postbox \
+ && chown -R www-data:www-data /var/postbox
+
+EXPOSE 80

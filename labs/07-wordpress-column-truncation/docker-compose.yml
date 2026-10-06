@@ -1,0 +1,42 @@
+name: phpctf-07-wordpress-column-truncation
+
+services:
+  db:
+    image: mysql:5.7.44
+    # sql_mode is emptied on purpose: this is what "the shared hosting the blog
+    # has run on since 2011" looks like. Out-of-range data is a warning and the
+    # value is silently truncated instead of the statement being rejected.
+    command: ["--sql-mode=", "--character-set-server=utf8", "--collation-server=utf8_general_ci"]
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpw
+      MYSQL_DATABASE: inkpress
+      MYSQL_USER: inkpress
+      MYSQL_PASSWORD: inkpress
+    volumes:
+      - ./challenge/db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uinkpress", "-pinkpress"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+
+  challenge:
+    build: ./challenge
+    ports:
+      - "127.0.0.1:8007:80"
+    environment:
+      DB_HOST: db
+      DB_USER: inkpress
+      DB_PASS: inkpress
+      DB_NAME: inkpress
+    depends_on:
+      db:
+        condition: service_healthy
+
+  solver:
+    image: python:3.12-alpine
+    profiles: ["solve"]
+    volumes: ["./solve:/solve:ro"]
+    working_dir: /solve
+    command: ["python", "solve.py", "http://challenge"]
+    depends_on: [challenge]

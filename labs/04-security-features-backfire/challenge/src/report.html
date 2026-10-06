@@ -1,0 +1,25 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>notes.lab &mdash; report a note</title>
+<style>
+ body{background:#11131a;color:#c8ccd4;font:14px/1.5 ui-monospace,Menlo,Consolas,monospace;margin:0;padding:2rem}
+ .wrap{max-width:70ch;margin:auto}
+ h1{color:#e8b84b;font-size:1.2rem}
+ p.sub{color:#6d7480}
+ a{color:#7aa2f7} code{color:#9ece6a}
+</style>
+<div class="wrap">
+<h1>report a note</h1>
+<p class="sub">
+The admin bot lives on its own service. Submit the URL of the note you want
+reviewed to the reporting endpoint:
+</p>
+<pre><code>POST http://127.0.0.1:9004/report
+Content-Type: application/x-www-form-urlencoded
+
+url=http%3A%2F%2Fchallenge%2F%3Fxss%3D...</code></pre>
+<p class="sub">
+or use the form at <a href="http://127.0.0.1:9004/">http://127.0.0.1:9004/</a>.
+The admin only opens links whose origin is this site.
+</p>
+</div>

@@ -1,0 +1,1 @@
+PHRACK{one_extra_property_and_wakeup_never_rang}

@@ -1,0 +1,24 @@
+name: phpctf-08-wakeup-bypass
+
+services:
+  challenge:
+    build:
+      context: ./challenge
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:8008:80"
+
+  legacy:
+    build:
+      context: ./challenge
+      dockerfile: Dockerfile.legacy
+    ports:
+      - "127.0.0.1:9008:80"
+
+  solver:
+    image: python:3.12-alpine
+    profiles: ["solve"]
+    volumes: ["./solve:/solve:ro"]
+    working_dir: /solve
+    command: ["python", "solve.py", "http://challenge", "http://legacy"]
+    depends_on: [challenge, legacy]
